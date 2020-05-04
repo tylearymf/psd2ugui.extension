@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ExtensionManifest Version="4.0" ExtensionBundleId="com.tylearymf.psd2ugui.extension" ExtensionBundleVersion="1.0.0"
+		ExtensionBundleName="psd2ugui.extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<Author>
+		<![CDATA[tylearymf]]>
+	</Author>	
+	<ExtensionList>
+		<Extension Id="com.tylearymf.psd2ugui.extension" Version="1.0" />
+	</ExtensionList>
+	<ExecutionEnvironment>
+		<HostList>
+			<Host Name="PHSP" Version="[14.0,99.0]" />
+			<Host Name="PHXS" Version="[14.0,99.0]" />
+		</HostList>
+		<LocaleList>
+			<Locale Code="en_US" />
+			<Locale Code="zh_CN" />
+		</LocaleList>
+		<RequiredRuntimeList>
+			<RequiredRuntime Name="CSXS" Version="6.0" />
+			<CEFCommandLine>
+				<Parameter>--allow-file-access</Parameter>
+				<Parameter>--allow-file-access-from-files</Parameter>
+				<Parameter>--enable-nodejs</Parameter>
+			</CEFCommandLine>
+		</RequiredRuntimeList>
+	</ExecutionEnvironment>
+	<DispatchInfoList>
+		<Extension Id="com.tylearymf.psd2ugui.extension">
+			<DispatchInfo >
+				<Resources>
+				<MainPath>./index.html</MainPath>
+				<ScriptPath>./jsx/jsxInit.jsx</ScriptPath>
+				</Resources>
+				<Lifecycle>
+					<AutoVisible>true</AutoVisible>
+				</Lifecycle>
+				<UI>
+					<Type>Panel</Type>
+					<Menu>psd2ugui</Menu>
+					<Geometry>
+						<Size>
+							<Height>800</Height>
+							<Width>400</Width>
+						</Size>
+						<MinSize>
+							<Height>800</Height>
+							<Width>400</Width>
+						</MinSize>
+					</Geometry>
+				</UI>
+			</DispatchInfo>
+
+		</Extension>
+	</DispatchInfoList>
+</ExtensionManifest>

@@ -1,0 +1,391 @@
+<!doctype html>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<!-- common lib -->
+	<script src="./lib/jquery-3.5.0.min.js"></script>
+	<script src="./lib/CSInterface-7.0.0.js"></script>
+	<script src="./js/ext.js"></script>
+	<script src="./js/extensions.js"></script>
+
+	<!-- psd2ugui逻辑 -->
+	<script src="./js/jsBridge.js"></script>
+	<script src="./js/logic/EVENTID.js"></script>
+	<script src="./js/logic/jsMain.js"></script>
+
+	<!-- jstree lib and style -->
+	<script src="./lib/jstree/dist/jstree.min.js"></script>
+	<link rel="stylesheet" href="./lib/jstree/dist/themes/default/style.min.css" />
+	<style>
+		html {
+			margin: 0;
+			padding: 0;
+			font-size: 62.5%;
+		}
+
+		body {
+			margin: 0 auto;
+			padding: 20px 10px;
+			font-size: 14px;
+			font-size: 1.4em;
+		}
+
+		h1 {
+			font-size: 1.8em;
+			text-align: center;
+		}
+
+		h3 {
+			margin-bottom: 0;
+		}
+
+		.nodeTypeBtn:active,
+		.anchorTypeBtn:active,
+		.active {
+			background: #00f5fd;
+		}
+
+		.nodeTypeBtn {
+			width: 60px;
+		}
+
+		.anchorTypeBtn {
+			width: 30px;
+		}
+	</style>
+
+	<title>psd2ugui</title>
+</head>
+
+<body onLoad="onLoaded()">
+	<h1>PSD2UGUI Extension</h1>
+
+	<div>
+		<h3 id="exportNameTitle">Export Name:</h3>
+		<input id="exportNameInput" onchange="onChange_exportNameInput()">
+		<input type="checkbox" id="commonCheckbox" onchange="onChange_commonCheckbox()">
+		<label for="commonCheckbox">isCommon</label>
+	</div>
+
+	<div>
+		<h3 id="symbolTitle">Node Symbol:</h3>
+		<input type="radio" name="symbol" id="symbolRadio1" onchange="onChange_symbolType()">
+		<label for="symbolRadio1">----------@----------</label>
+		<input type="radio" name="symbol" id="symbolRadio2" onchange="onChange_symbolType()">
+		<label for="symbolRadio2">----------#----------</label>
+	</div>
+
+	<div>
+		<h3 id="nodeNameTitle">Node Name:</h3>
+		<input id="nodeNameInput" onchange="onChange_nodeNameInput()">
+	</div>
+
+	<h3>Node Type:</h3>
+	<div id="nodeTypeDiv">
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="WINDOW">Window</button>
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="PANEL">Panel</button>
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="BUTTON">Button</button>
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="SPRITE">Sprite</button>
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="TEXTURE">Texture</button>
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="LABEL">Label</button>
+		<button onclick="onClick_nodeTypeBtn(this.id)" class="nodeTypeBtn" id="SLICE">Slice</button>
+	</div>
+
+	<h3>Anchor Type:</h3>
+	<div id="anchorTypeDiv">
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="STRETCH">ST</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="LEFTTOP">LT</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="LEFT">L</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="LEFTBOTTOM">LB</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="TOP">T</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="CENTER">C</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="BOTTOM">B</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="RIGHTTOP">RT</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="RIGHT">R</button>
+		<button onclick="onClick_anchorTypeBtn(this.id)" class="anchorTypeBtn" id="RIGHTBOTTOM">RB</button>
+	</div>
+
+	<div>
+		<h3 id="argumentsTitle">Arguments:</h3>
+		<input id="argumentsInput" onchange="onChange_argumentsInput()">
+	</div>
+
+	<h3>Tree View:</h3>
+	<div>
+		<input id="searchInput">
+		<button id="clearSearchBtn" onclick="ClearSearch()">Clear</button>
+		<button id="updateLayerBtn" onclick="jsBridge.call_updateAllLayers()">Refresh Tree</button>
+	</div>
+
+	&nbsp;
+	<div id="ps_tree" style="overflow-y: scroll; height:400px;"></div>
+</body>
+
+<script>
+	function getSelectLayerIds() {
+		var selecteNodes = $('#ps_tree').jstree(true).get_selected(true)
+		if (selecteNodes == null || selecteNodes.length == 0) {
+			return;
+		}
+
+		var array = new Array()
+		for (var index = 0; index < selecteNodes.length; index++) {
+			var node = selecteNodes[index];
+			array.push(node.data.layerId)
+		}
+
+		return array
+	}
+	function onChange_exportNameInput(value) {
+		var exportName = value || $("#exportNameInput").val()
+		if (exportName.trim() == "") {
+			exportName = "TEMP"
+		}
+
+		var array = getSelectLayerIds()
+		var data = { exportName: exportName, selectLayerIds: array }
+		jsBridge.call_setLayerData(data)
+	}
+	function onChange_commonCheckbox() {
+		var checkboxValue = $("#commonCheckbox").prop("checked")
+		var val = $("#exportNameInput").val()
+		var valHasCommon = val.indexOf("common_") == 0
+
+		if (checkboxValue && !valHasCommon) {
+			onChange_exportNameInput("common_" + val)
+		}
+		else if (!checkboxValue && valHasCommon) {
+			var len = "common_".length
+			onChange_exportNameInput(val.substring(len, val.length))
+		}
+	}
+	function onChange_symbolType() {
+		var symbolType = ""
+		if ($("#symbolRadio1").prop("checked")) {
+			symbolType = "@"
+		}
+		else if ($("#symbolRadio2").prop("checked")) {
+			symbolType = "#"
+		}
+
+		if (symbolType != "") {
+			var array = getSelectLayerIds()
+			var data = { symbolType: symbolType, selectLayerIds: array }
+			jsBridge.call_setLayerData(data)
+		}
+	}
+	function onChange_nodeNameInput() {
+		var nodeName = $("#nodeNameInput").val()
+		var array = getSelectLayerIds()
+		var data = { nodeName: nodeName, selectLayerIds: array }
+		jsBridge.call_setLayerData(data)
+	}
+	function onChange_argumentsInput() {
+		var nodeArgumentsVal = $("#argumentsInput").val()
+		var nodeArguments = null
+		if (nodeArgumentsVal != "") {
+			nodeArguments = nodeArgumentsVal.split('_')
+		}
+		else {
+			nodeArguments = new Array()
+		}
+
+		var array = getSelectLayerIds()
+		var data = { nodeArguments: nodeArguments, selectLayerIds: array }
+		jsBridge.call_setLayerData(data)
+	}
+	function onClick_nodeTypeBtn(value) {
+		var array = getSelectLayerIds()
+		var data = { fullNodeType: value, selectLayerIds: array }
+		jsBridge.call_setLayerData(data)
+	}
+	function onClick_anchorTypeBtn(value) {
+		var array = getSelectLayerIds()
+		var data = { fullAnchorType: value, selectLayerIds: array }
+		jsBridge.call_setLayerData(data)
+	}
+
+
+
+	function initJstree() {
+		try {
+			$('#ps_tree').on("move_node.jstree", function (event, data) {
+				// ShowMsg('move');
+				var new_instance = data.new_instance
+				var position = data.position
+				var oldPosition = data.old_position
+				var parentLayerId = data.parent
+				if (data.parent !== "#") parentLayerId = new_instance.get_node(data.parent).data.layerId
+				var layerId = data.node.data.layerId
+				jsBridge.call_moveLayer({
+					layerId: layerId,
+					parentLayerId: parentLayerId,
+					position: position,
+					oldPosition: oldPosition,
+				})
+			}).on("rename_node.jstree", function (event, data) {
+				var layerId = data.node.data.layerId
+				var newName = data.text
+				jsBridge.call_renameLayer({
+					layerId: layerId,
+					layerName: newName
+				})
+			}).on("create_node.jstree", function (event, data) {
+				// ShowMsg('create_node');
+
+				var parentLayerId = data.instance.get_node(data.parent).data.layerId
+				var position = data.position
+				var layerTypeName = data.node.data.layerTypeName
+
+				jsBridge.call_addArtLayer({
+					layerTypeName: layerTypeName,
+					parentLayerId: parentLayerId,
+					position: position
+				})
+			}).on("delete_node.jstree", function (event, data) {
+				// ShowMsg('call_removeLayer');
+				var layerId = data.node.data.layerId
+				jsBridge.call_removeLayer({ layerId: layerId })
+			}).on("select_node.jstree", function (event, data) {
+				var selecteNodeIds = data.selected
+				var layerIds = new Array()
+				for (var index = 0; index < selecteNodeIds.length; index++) {
+					var nodeId = selecteNodeIds[index];
+					var node = data.instance.get_node(nodeId)
+					layerIds.push(node.data.layerId)
+				}
+
+				jsBridge.call_getSelectLayerData({ selectLayerIds: layerIds })
+			}).on("refresh.jstree", function () {
+			}).on("check_node.jstree", function (event, data) {
+				if ($.blockCheckEvent) return;
+
+				var layerId = data.node.data.layerId
+				jsBridge.call_setLayerVisible({ layerId: layerId, visible: true })
+			}).on("uncheck_node.jstree", function (event, data) {
+				if ($.blockCheckEvent) return;
+
+				var layerId = data.node.data.layerId
+				jsBridge.call_setLayerVisible({ layerId: layerId, visible: false })
+			});
+		} catch (error) {
+			ShowErrorStack(error, "jstree bind event")
+		}
+
+		try {
+			$('#ps_tree').jstree({
+				'plugins': ["contextmenu", "dnd", "conditionalselect", "unique", "search", "checkbox"],
+				'core': {
+					'check_callback': function (operation, node, node_parent, node_position, more) {
+						// operation can be 'create_node', 'rename_node', 'delete_node', 'move_node' or 'copy_node'
+						// in case of 'rename_node' node_position is filled with the new node name
+						// return operation === 'rename_node' ? true : false;
+
+						if (operation == 'move_node') {
+							var layerTypeName = node_parent.data && node_parent.data.layerTypeName
+
+							if (layerTypeName && layerTypeName == "ArtLayer") {
+								return false
+							}
+
+							return true
+						}
+
+						return true;
+					},
+					'data': function (obj, callback) {
+						callback.call(this, jsMain.getTreeData())
+					},
+				},
+				"search": {
+					"case_sensitive": false,
+					"show_only_matches": true,
+				},
+				"checkbox": {
+					"three_state": false,
+					"tie_selection": false,
+					"keep_selected_style": true,
+					"whole_node": false,
+					"cascade_to_hidden": false,
+					"cascade_to_disabled": false,
+				},
+				"conditionalselect": function (node, event) {
+					if (node.data) {
+						jsBridge.call_selectLayer({ layerId: node.data.layerId })
+					}
+					return true
+				},
+				"contextmenu": {
+					"items": function () {
+						return {
+							"创建图层": {
+								"label": "创建图层",
+								"_disabled": function (data) {
+									var instance = $.jstree.reference(data.reference)
+									node = instance.get_node(data.reference)
+
+									if (!node.data) return true
+									return node.data.layerTypeName != "LayerSet"
+								},
+								"action": function (data) {
+									var instance = $.jstree.reference(data.reference)
+									node = instance.get_node(data.reference)
+									instance.create_node(node, { data: { layerTypeName: "ArtLayer" } })
+								}
+							},
+							"创建Group": {
+								"label": "创建Group",
+								"_disabled": function (data) {
+									var instance = $.jstree.reference(data.reference)
+									node = instance.get_node(data.reference)
+
+									if (!node.data) return true
+									return node.data.layerTypeName != "LayerSet"
+								},
+								"action": function (data) {
+									var instance = $.jstree.reference(data.reference)
+									node = instance.get_node(data.reference)
+									instance.create_node(node, { data: { layerTypeName: "LayerSet" } })
+								}
+							},
+							"删除节点": {
+								"label": "删除节点",
+								"action": function (data) {
+									var instance = $.jstree.reference(data.reference)
+									node = instance.get_node(data.reference)
+									instance.delete_node(node)
+								}
+							},
+							"编辑节点": {
+								"label": "编辑节点",
+								"action": function (data) {
+									var instance = $.jstree.reference(data.reference)
+									node = instance.get_node(data.reference)
+									instance.edit(node)
+								}
+							},
+						}
+					}
+				}
+			});
+		} catch (error) {
+			ShowErrorStack(error, "jstree init")
+		}
+
+		$("#searchInput").keyup(function () {
+			var searchString = $(this).val()
+			$('#ps_tree').jstree(true).search(searchString)
+		});
+	}
+
+	function ClearSearch() {
+		$('#ps_tree').jstree(true).clear_search()
+		$("#searchInput").val("")
+	}
+
+	$(document).ready(initJstree)
+</script>
+
+</html>
